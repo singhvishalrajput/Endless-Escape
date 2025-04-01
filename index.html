@@ -430,6 +430,52 @@
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.module.min.js';
 
+        // Audio elements
+        let backgroundMusic, tingSFX, gameoverSFX;
+
+        // Load audio
+        function loadAudio() {
+            backgroundMusic = new Audio('music.mp3');
+            backgroundMusic.loop = true;
+            backgroundMusic.volume = 0.01;
+            backgroundMusic.preload = 'auto';
+            
+            tingSFX = new Audio('ting.mp3');
+            tingSFX.volume = 0.6;
+            tingSFX.preload = 'auto';
+            
+            gameoverSFX = new Audio('gameover.mp3');
+            gameoverSFX.volume = 0.7;
+            gameoverSFX.preload = 'auto';
+            
+            // Force preloading
+            tingSFX.load();
+            gameoverSFX.load();
+        }
+
+        // Sound functions
+        function playBackgroundMusic() {
+            backgroundMusic.currentTime = 0;
+            backgroundMusic.play().catch(error => console.log('Audio play failed:', error));
+        }
+
+        function stopBackgroundMusic() {
+            backgroundMusic.pause();
+            backgroundMusic.currentTime = 0;
+        }
+
+        function playMoveSFX() {
+            const tingSound = new Audio('ting.mp3');
+            tingSound.volume = 0.3;
+            tingSound.play().catch(error => console.log('Audio play failed:', error));
+        }
+
+        function playGameoverSFX() {
+            gameoverSFX.currentTime = 0;
+            gameoverSFX.play().catch(error => console.log('Audio play failed:', error));
+        }
+                        
+        
         // Create a separate TWEEN object instead of extending THREE
         const TWEEN = {
             Tween: function(object) {
@@ -573,6 +619,13 @@ const costumeMenu = document.querySelector('.costume-menu');
 const costumeItems = document.querySelectorAll('.costume-item');
 const startWithCostumeButton = document.getElementById('start-with-costume-button');
 
+// Enable audio on mobile (needs to be triggered by user interaction)
+document.addEventListener('touchstart', function() {
+    // Create and play a silent sound to unlock audio
+    const silentSound = new Audio();
+    silentSound.play().catch(() => {});
+}, { once: true });
+
 // Update player colors based on costume
 function updatePlayerAppearance() {
     // Get the player's body and head
@@ -685,6 +738,8 @@ startWithCostumeButton.addEventListener('click', () => {
 
             // Create initial environment
             createEnvironment();
+
+            loadAudio();
 
             // Update UI
             highScoreElement.textContent = highScore;
@@ -1185,6 +1240,8 @@ function createBird() {
 
             // Show controls hint initially
             document.getElementById('controls-hint').style.display = 'block';
+
+            playBackgroundMusic();
             
             // Hide controls hint after 1 second
             setTimeout(function() {
@@ -1211,6 +1268,9 @@ function createBird() {
             gameActive = false;
             finalScoreElement.textContent = Math.floor(score);
             gameOverScreen.style.display = 'block';
+
+            stopBackgroundMusic();
+            playGameoverSFX();
             
             if (score > highScore) {
                 highScore = Math.floor(score);
@@ -1222,6 +1282,7 @@ function createBird() {
         function restartGame() {
             startGame();
             updatePlayerAppearance();
+            playBackgroundMusic();
         }
 
         function handleKeyDown(event) {
@@ -1254,26 +1315,32 @@ function createBird() {
 
         function moveLeft() {
             if (currentLane > 0) {
+                playMoveSFX();
                 currentLane--;
                 new TWEEN.Tween(player.position)
                     .to({ x: lanes[currentLane] }, 200)
                     .easing(TWEEN.Easing.Quadratic.Out)
                     .start();
+                    
             }
         }
 
         function moveRight() {
             if (currentLane < 2) {
+                playMoveSFX();
                 currentLane++;
                 new TWEEN.Tween(player.position)
                     .to({ x: lanes[currentLane] }, 200)
                     .easing(TWEEN.Easing.Quadratic.Out)
                     .start();
+                    
             }
         }
 
         function jump() {
             if (!jumping) {
+                
+                playMoveSFX();
                 jumping = true;
                 
                 // Store the initial position
@@ -1303,7 +1370,10 @@ function createBird() {
 
         function slide() {
             if (!sliding && !jumping) {
+                
+                playMoveSFX();
                 sliding = true;
+                
                 
                 const slideDown = new TWEEN.Tween(player.scale)
                     .to({ y: 0.5 }, 300)
@@ -1376,6 +1446,7 @@ function createBird() {
             playerBounds.minZ < obstacleBounds.maxZ &&
             playerBounds.maxZ > obstacleBounds.minZ
         ) {
+            playGameoverSFX();
             gameOver();
             return true;
         }
